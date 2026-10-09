@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Graph memory cookbook: twenty problems and their remedies</title>
+<meta name="description" content="Twenty recipes from Graph-based Agent Memory (arXiv 2602.05665), applied to a governed banking customer context vault: each issue with an example, and each remedy with an explanation, code and a measured result.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#16171B;--paper2:#1E1F25;--ink:#E9E5DB;--ink2:#B0ABBB;--accent:#C8471C;--teal:#146B6B;--teal2:#8fc4c4;--gold:#B8892B;--mute:#9a948a;--pass:#2E7D4F;--fail:#B3261E;
+--display:"Fraunces",Georgia,serif;--body:"Source Serif 4","Iowan Old Style",Georgia,serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:18px;line-height:1.6;-webkit-font-smoothing:antialiased;position:relative}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;mix-blend-mode:multiply;z-index:0;
+background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+a{color:var(--teal2)}
+.wrap{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:0 28px}
+header.hero{padding:96px 0 72px;display:grid;grid-template-columns:1.2fr .8fr;gap:48px;align-items:end;border-bottom:1px solid var(--ink)}
+.kicker{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(44px,6.5vw,84px);line-height:.98;letter-spacing:-.02em;margin:18px 0 22px;font-variation-settings:"opsz" 144,"SOFT" 30}
+h1 em{font-style:italic;font-weight:400;color:var(--teal2)}
+.lede{font-size:21px;color:var(--ink2);max-width:60ch}
+.hero-meta{font-family:var(--mono);font-size:13px;color:var(--ink2);display:grid;gap:10px;border-left:2px solid var(--accent);padding-left:18px}
+.hero-meta b{color:var(--ink)}
+.reveal{opacity:0;transform:translateY(14px);animation:rise .9s cubic-bezier(.2,.7,.2,1) forwards}
+section{display:grid;grid-template-columns:150px 1fr;gap:40px;padding:72px 0;border-bottom:1px solid rgba(233,229,219,.15);scroll-margin-top:0}
+section .num{font-family:var(--display);font-size:72px;font-weight:300;line-height:1;color:var(--accent);position:sticky;top:32px;align-self:start;font-variation-settings:"opsz" 144}
+section .num small{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);margin-top:12px}
+h2{font-family:var(--display);font-size:clamp(30px,3.6vw,44px);font-weight:600;line-height:1.1;letter-spacing:-.015em;margin:0 0 14px}
+h3{font-family:var(--display);font-size:24px;font-weight:600;margin:40px 0 10px}
+p{max-width:70ch}
+.callout{border-left:3px solid var(--accent);padding:10px 22px;margin:24px 0 0;background:var(--paper2);max-width:none;font-size:16px}
+.callout b{font-family:var(--display)}
+figure{margin:28px 0}figcaption{font-family:var(--mono);font-size:13px;color:var(--ink2);margin-top:10px;max-width:80ch}
+.diagram{width:100%;height:auto;display:block;overflow:visible}
+.diagram .d-title{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;fill:var(--accent)}
+.diagram .d-label{font-family:var(--display);font-size:17px;font-weight:600;fill:var(--ink)}
+.diagram .d-note{font-family:var(--mono);font-size:12px;fill:var(--ink2)}
+.diagram .d-box{font-family:var(--display);font-size:15px;font-weight:600;fill:var(--ink)}
+.diagram .d-small{font-family:var(--mono);font-size:10.5px;fill:var(--ink2)}
+.diagram .axis{stroke:var(--ink);stroke-width:1}.diagram .box{fill:var(--paper);stroke:var(--ink);stroke-width:1.2}
+.diagram .box.accent{fill:#3a2620;stroke:var(--accent)}.diagram .box.teal{fill:#1c3333;stroke:var(--teal2)}.diagram .box.gold{fill:#3a3018;stroke:var(--gold)}
+.diagram .flow{stroke:var(--ink2);stroke-width:1.4;fill:none;marker-end:url(#arr)}.diagram .flow.dashed{stroke-dasharray:4 4}
+table{border-collapse:collapse;width:100%;font-size:15px;margin:16px 0}th{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;text-align:left;color:var(--ink2);padding:8px 10px;border-bottom:1px solid var(--ink)}
+td{padding:8px 10px;border-bottom:1px solid rgba(233,229,219,.12);vertical-align:top}.mono{font-family:var(--mono);font-size:13px}
+.pill{font-family:var(--mono);font-size:11px;letter-spacing:.1em;padding:2px 9px;border-radius:999px;color:#fff;white-space:nowrap}.pill.pass{background:var(--pass)}.pill.fail{background:var(--fail)}.pill.na{background:var(--mute);color:var(--paper)}
+tr.fail td{background:rgba(179,38,30,.16)}tr.pass td{background:rgba(46,125,79,.14)}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin:26px 0 8px}
+.stat{border-top:2px solid var(--ink);padding-top:12px}.stat b{font-family:var(--display);font-size:40px;font-weight:600;line-height:1;display:block;letter-spacing:-.02em}
+.stat span{font-family:var(--mono);font-size:12px;color:var(--ink2);letter-spacing:.04em}
+.stat.teal b{color:var(--teal2)}.stat.accent b{color:var(--accent)}.stat.gold b{color:var(--gold)}
+.muted{color:var(--ink2)}
+footer{padding:56px 0 80px;font-family:var(--mono);font-size:13px;color:var(--ink2)}footer ul{padding-left:18px}
+.in{opacity:0;transform:translateY(18px);transition:opacity .8s ease,transform .8s cubic-bezier(.2,.7,.2,1)}.in.show{opacity:1;transform:none}
+@keyframes rise{to{opacity:1;transform:none}}
+
+/* recipe slide parts */
+.meta{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.prio{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:999px}
+.prio.high{background:var(--fail);color:#fff}.prio.med{background:var(--gold);color:var(--paper)}.prio.low{background:var(--mute);color:var(--paper)}
+.srcline{font-family:var(--mono);font-size:12px;color:var(--ink2)}
+.why{font-size:19px;color:var(--ink2);max-width:72ch;margin:0 0 6px}
+.ir{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin:26px 0 0}
+.card{border:1px solid rgba(233,229,219,.16);border-radius:10px;padding:18px 20px 20px;background:rgba(255,255,255,.03)}
+.card.issue{border-top:3px solid var(--accent)}
+.card.remedy{border-top:3px solid var(--teal2);background:#122323}
+.card h4{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 8px}
+.card.issue h4{color:var(--accent)}.card.remedy h4{color:var(--teal2)}
+.card p{font-size:16px;margin:0 0 10px;max-width:none}
+.card h5{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);margin:16px 0 6px;font-weight:500}
+.ex{font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--paper);border-left:3px solid;padding:10px 12px;border-radius:0 6px 6px 0;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+.ex.bad{border-color:var(--fail)}.ex.good{border-color:var(--pass)}.ex.neutral{border-color:var(--mute)}
+.ex .hl{color:var(--ink);background:rgba(200,71,28,.22);padding:0 3px;border-radius:3px}
+.ex .ok{color:var(--ink);background:rgba(46,125,79,.3);padding:0 3px;border-radius:3px}
+.ex .dim{color:var(--mute)}
+.ex table{font-size:12px;margin:2px 0}.ex th{font-size:10px;padding:4px 6px}.ex td{padding:4px 6px}
+.how{margin:22px 0 0}
+.how summary{cursor:pointer;font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal2);list-style:none}
+.how summary::-webkit-details-marker{display:none}.how summary::before{content:"+ ";}.how[open] summary::before{content:"– "}
+pre.code{font-family:var(--mono);font-size:12.5px;line-height:1.55;background:#0D0E11;border:1px solid rgba(233,229,219,.12);border-radius:8px;padding:14px 16px;overflow-x:auto;margin:10px 0 0;color:#d8d3c7}
+pre.code .c{color:var(--mute)}
+.result{margin:22px 0 0;border-top:1px solid rgba(233,229,219,.15);padding-top:14px}
+.result h4{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 6px}
+.result p{font-size:16px;margin:6px 0}
+.part{position:relative;padding:60px 0 0;border-bottom:1px solid var(--ink)}
+.part .kicker{color:var(--gold)}
+.part h2{margin:10px 0 18px;font-size:clamp(34px,4.4vw,56px)}
+.part p{color:var(--ink2);margin:0 0 30px}
+.toc{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 18px;margin:24px 0 0;padding:0;list-style:none}
+.toc li{border-top:1px solid rgba(233,229,219,.15);padding:8px 0;font-size:15px;line-height:1.35}
+.toc a{color:var(--ink);text-decoration:none}.toc a:hover{color:var(--teal2)}
+.toc .n{font-family:var(--mono);font-size:12px;color:var(--accent);margin-right:6px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;vertical-align:middle}.dot.high{background:var(--fail)}.dot.med{background:var(--gold)}.dot.low{background:var(--mute)}
+.summary td:first-child{font-family:var(--mono);color:var(--accent)}
+.navhint{position:fixed;right:18px;bottom:16px;z-index:5;font-family:var(--mono);font-size:11px;color:var(--ink2);background:rgba(22,23,27,.85);border:1px solid rgba(233,229,219,.18);border-radius:999px;padding:5px 12px}
+.progress{position:fixed;left:0;top:0;height:3px;background:var(--accent);z-index:6;width:0}
+@media (max-width:980px){header.hero,section,.ir{grid-template-columns:1fr}.stat-row{grid-template-columns:1fr 1fr}.toc{grid-template-columns:1fr 1fr}section .num{position:static;font-size:52px}}
+@media print{body::before,.navhint,.progress{display:none}.in{opacity:1;transform:none}.how{display:block}.how pre{display:block}section{break-inside:avoid-page}}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="navhint">← → or j / k: previous / next recipe</div>
+
+<header class="hero wrap">
+  <div>
+    <div class="kicker reveal" style="animation-delay:.05s">Notebook 05 · Graph memory cookbook · mem0 · Strands Agents · AWS Bedrock</div>
+    <h1 class="reveal" style="animation-delay:.15s">Twenty ways graph memory goes wrong,<br><em>and what fixes each one.</em></h1>
+    <p class="lede reveal" style="animation-delay:.3s">The survey <i>Graph-based Agent Memory</i> (Yang et al., arXiv 2602.05665, 2026) describes memory as a life cycle: extraction, storage, retrieval and evolution, followed by seven open challenges. Notebook 05 turns the parts of it that matter for a bank's customer context vault into twenty recipes. Each section below covers one recipe. It shows <b>the issue</b>, with a concrete failing example from the vault; <b>the suggested remedy</b>, with what it does and the same example fixed; the code behind it; the result measured in the notebook run; and what to watch out for in a regulated setting.</p>
+  </div>
+  <div class="hero-meta reveal" style="animation-delay:.45s">
+    <div><b>Running example</b><br>Priya Sharma of Sharma Logistics, a freight business customer: 63 vault records, a graph of 18 edges between 9 entities across 3 customers, assessed as of 27 September 2026.</div>
+    <div><b>How to read a section</b><br><span style="color:var(--accent)">■</span> the issue, and an example of it going wrong<br><span style="color:var(--teal2)">■</span> the remedy, and the same example fixed<br><span style="color:var(--gold)">■</span> what the notebook run measured</div>
+    <div><b>Priority for this use case</b><br><span class="prio high">high</span> <span class="prio med">medium</span> <span class="prio low">lower</span></div>
+    <div><b>Source</b><br>05_graph_memory_cookbook.ipynb and memlab/techniques.py. Every number is from the saved notebook run, which uses Claude Haiku 4.5 on Bedrock. Model outputs vary from run to run (recipe 20).</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section id="map"><div class="num">00<small>the map</small></div><div class="in">
+<h2>Where each recipe sits in the memory life cycle</h2>
+<p>The survey's life cycle runs from raw interactions to memory (extraction), through how memory is organised (storage) and how it is found (retrieval), to how it changes without a new interaction (evolution). The last six recipes take on the survey's open challenges and its benchmark landscape.</p>
+<figure>
+<svg class="diagram" viewBox="0 0 900 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Memory life cycle with recipe numbers">
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#B0ABBB"/></marker></defs>
+  <rect x="0" y="20" width="190" height="96" rx="8" class="box accent"/><text x="16" y="48" class="d-box">Extraction §IV</text><text x="16" y="72" class="d-small">raw data → typed memory</text><text x="16" y="98" class="d-small">1 triples · 2 time</text>
+  <rect x="236" y="20" width="190" height="96" rx="8" class="box teal"/><text x="252" y="48" class="d-box">Storage §V</text><text x="252" y="72" class="d-small">how memory is organised</text><text x="252" y="98" class="d-small">3 bi-temporal · 4 tree · 5 hyperedge</text>
+  <rect x="472" y="20" width="190" height="96" rx="8" class="box teal"/><text x="488" y="48" class="d-box">Retrieval §VI</text><text x="488" y="72" class="d-small">how memory is found</text><text x="488" y="98" class="d-small">6 route · 7 time · 8 rounds · 9 hybrid</text>
+  <rect x="708" y="20" width="190" height="96" rx="8" class="box gold"/><text x="724" y="48" class="d-box">Evolution §VII</text><text x="724" y="72" class="d-small">how memory changes</text><text x="724" y="98" class="d-small">10 merge · 11 forget · 12 infer</text><text x="724" y="111" class="d-small">13 learn · 14 ask</text>
+  <path d="M190,68 L232,68" class="flow"/><path d="M426,68 L468,68" class="flow"/><path d="M662,68 L704,68" class="flow"/>
+  <path d="M803,116 C803,150 95,150 95,120" class="flow dashed"/>
+  <text x="449" y="146" class="d-small" text-anchor="middle">evolution feeds back into what is stored and extracted</text>
+  <rect x="0" y="162" width="898" height="40" rx="8" class="box"/><text x="16" y="187" class="d-box">Challenges §X and benchmarks §VIII</text><text x="330" y="187" class="d-small">15 graph quality · 16 relational privacy · 17 poisoning · 18 write conflicts · 19 benchmarks · 20 stability</text>
+</svg><figcaption>The twenty recipes on the survey's life cycle. The colour of each stage matches its part divider below.</figcaption></figure>
+<h3>Where to start: the nine high-priority recipes</h3>
+<table>
+<thead><tr><th>Recipe</th><th>Why it matters for a bank's customer vault</th></tr></thead>
+<tbody>
+<tr><td class="mono"><a href="#r17">17 poisoning</a></td><td>One customer statement can rewire the graph and link unrelated customers unless unverified structure is quarantined.</td></tr>
+<tr><td class="mono"><a href="#r16">16 relational privacy</a></td><td>Graph structure can reveal one customer's relationships in another's channel without any record being read.</td></tr>
+<tr><td class="mono"><a href="#r18">18 write conflicts</a></td><td>The VRM and the banker write to the same memory; order-dependent results are nondeterministic in a queue.</td></tr>
+<tr><td class="mono"><a href="#r9">9 hybrid sources</a></td><td>Systems of record and customer statements disagree in real data; showing only one value misleads the banker.</td></tr>
+<tr><td class="mono"><a href="#r5">5 hyperedges</a></td><td>Commitments are what a bank is most accountable for; each promise has to stay whole, with its due date and owners.</td></tr>
+<tr><td class="mono"><a href="#r2">2 event time</a></td><td>Due dates and "when did it happen" questions are core, and dates are where extraction goes wrong most.</td></tr>
+<tr><td class="mono"><a href="#r3">3 bi-temporal</a></td><td>Audit and complaints ask what the bank knew when it acted; without transaction time the vault cannot answer.</td></tr>
+<tr><td class="mono"><a href="#r1">1 schema triples</a></td><td>Every graph edge comes from extraction; inconsistent relation names silently split relationships.</td></tr>
+<tr><td class="mono"><a href="#r20">20 stability</a></td><td>A release decision taken on one run is taken on noise; every gate result depends on this.</td></tr>
+</tbody></table>
+<ul class="toc">
+<li><a href="#r1"><span class="n">01</span>Schema-guided triples<span class="dot high"></span></a></li>
+<li><a href="#r2"><span class="n">02</span>Mention time vs event time<span class="dot high"></span></a></li>
+<li><a href="#r3"><span class="n">03</span>Bi-temporal edges<span class="dot high"></span></a></li>
+<li><a href="#r4"><span class="n">04</span>Hierarchical summary tree<span class="dot med"></span></a></li>
+<li><a href="#r5"><span class="n">05</span>Commitments as hyperedges<span class="dot high"></span></a></li>
+<li><a href="#r6"><span class="n">06</span>Routed traversal<span class="dot med"></span></a></li>
+<li><a href="#r7"><span class="n">07</span>Temporal query operator<span class="dot med"></span></a></li>
+<li><a href="#r8"><span class="n">08</span>Multi-round retrieval<span class="dot med"></span></a></li>
+<li><a href="#r9"><span class="n">09</span>Hybrid sources, authority rule<span class="dot high"></span></a></li>
+<li><a href="#r10"><span class="n">10</span>Consolidation<span class="dot med"></span></a></li>
+<li><a href="#r11"><span class="n">11</span>Significance and forgetting<span class="dot low"></span></a></li>
+<li><a href="#r12"><span class="n">12</span>Inferred links, labelled<span class="dot med"></span></a></li>
+<li><a href="#r13"><span class="n">13</span>Experience memory<span class="dot med"></span></a></li>
+<li><a href="#r14"><span class="n">14</span>Active inquiry<span class="dot med"></span></a></li>
+<li><a href="#r15"><span class="n">15</span>Intrinsic graph quality<span class="dot med"></span></a></li>
+<li><a href="#r16"><span class="n">16</span>Relational privacy<span class="dot high"></span></a></li>
+<li><a href="#r17"><span class="n">17</span>Graph poisoning<span class="dot high"></span></a></li>
+<li><a href="#r18"><span class="n">18</span>Multi-agent write conflicts<span class="dot high"></span></a></li>
+<li><a href="#r19"><span class="n">19</span>Benchmark map<span class="dot low"></span></a></li>
+<li><a href="#r20"><span class="n">20</span>Stability across reruns<span class="dot high"></span></a></li>
+</ul>
+</div></section>
+
+<!-- ============================================================ PART I -->
+<div class="part" id="part1"><div class="kicker">Part I · Extraction · survey §IV</div><h2>From conversation to typed, dated memory</h2><p>Every edge and every date in the vault starts here. Mistakes made at extraction are invisible later, because the rest of the system trusts what was written.</p></div>
+
+<section id="r1"><div class="num">01<small>extraction</small></div><div class="in">
+<div class="meta"><span class="prio high">high priority</span><span class="srcline">Zeng et al. [20] · Liang et al. [21] · AriGraph [30] · §X dynamic schema learning</span></div>
+<h2>Schema-guided triples</h2>
+<p class="why">The graph can only be as good as the relation names the extractor writes. If the extractor is left to choose, the same relationship gets several names, and traversal treats them as unrelated.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>When an LLM extracts (subject, predicate, object) triples freely, it invents a new predicate whenever the wording changes. It also turns attributes and dates into "relations". A query for "who is the accountant?" then finds only the edges that happen to use the same name.</p>
+<h5>Example: free extraction over three interactions</h5>
+<div class="ex bad">CALL-88213 · EM-77164 · VRM-310554
+47 triples, <span class="hl">38 distinct predicates</span>
+
+The accountant relationship, four ways:
+  has_accountant · manages_bas_for
+  to_be_copied_on · should_be_sent_to
+
+Attributes posing as relations:
+  credit_date · opening_date · weekly_wage
+  delay_reason · monthly_cost</div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Give the extractor a <b>controlled predicate vocabulary</b> (12 relations, each with a one-line definition) and an explicit <b>OTHER</b>. Anything that fits no predicate comes back as a <b>schema-gap candidate</b> for a person to review, not as a made-up name. The vocabulary grows only through that review. This is the governed form of the survey's "dynamic schema learning".</p>
+<h5>Example: the same three interactions, guided</h5>
+<div class="ex good">20 triples, <span class="ok">8 predicates</span>
+  holds ×6 · accountant_of ×3 · operates_from ×3
+  plans ×3 · relationship_manager_of ×2
+  tenant_of ×1 · owns ×1 · OTHER ×1
+
+Review queue (1):
+  VRM-310554  Deepak Rao --?--> to be copied on
+              Newcastle merchant paperwork
+  → a reviewer decides whether "copy_to" joins the vocabulary</div>
+</div>
+</div>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">PREDICATES = {"director_of": "a person is a director of a company",
+              "accountant_of": "an external accountant acts for a business",
+              "holds": "an entity holds a bank product or facility", ...}     <span class="c"># 12 in all</span>
+
+rule = "Use ONLY these predicates; if a relationship fits none, use predicate OTHER: " + json.dumps(PREDICATES)
+triples, gaps = extract_triples(text, schema=PREDICATES)    <span class="c"># memlab.techniques: (in-vocabulary, OTHER)</span>
+<span class="c"># triples -> graph edges; gaps -> the weekly schema review queue, never into the graph</span></pre></details>
+<div class="result"><h4>Measured</h4>
+<div class="stat-row"><div class="stat accent"><b>38</b><span>predicates, free extraction</span></div><div class="stat teal"><b>8</b><span>predicates, schema-guided</span></div><div class="stat"><b>3</b><span>accountant_of edges, one name</span></div><div class="stat gold"><b>1</b><span>gap sent for review</span></div></div></div>
+<div class="callout"><b>Watch out.</b> A schema that is too small forces wrong labels: a model will squeeze "manages the BAS" into <span class="mono">relationship_manager_of</span>. Keep OTHER, review the gaps weekly, and version the predicate list the same way as the extraction policy.</div>
+</div></section>
+
+<section id="r2"><div class="num">02<small>extraction</small></div><div class="in">
+<div class="meta"><span class="prio high">high priority</span><span class="srcline">TReMu [37] · MemoTime [38]</span></div>
+<h2>Mention time, event time, and arithmetic in code</h2>
+<p class="why">"When was it said" and "when did it happen" are different dates. Interval questions go wrong when memory mixes the two up, or when a model does date arithmetic in prose.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>On Friday 4 September Priya says "we signed the lease <i>on Wednesday</i>" and "the depot opens <i>Monday the 2nd of November</i>". The record's date is 4 September (mention time), but the events are on 2 September and 2 November (event time). If the timeline is indexed only by when things were said, a model computing an interval picks up the wrong dates.</p>
+<h5>Example: timeline indexed by mention date</h5>
+<div class="ex bad">q12  fault first reported → technician fix
+     used 2026-06-11 → 2026-08-03 = <span class="hl">53 days</span>   gold 54
+q11  refund vs facility settlement
+     used settlement 2026-08-14 (the call that reported it)
+     instead of 2026-08-07 when it happened
+
+<span class="hl">0 of 4</span> temporal questions correct</div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Extract each dated event with <b>both</b> dates. Ground relative expressions with rules and record a <b>granularity</b>: "in July" stays a month, not 1 July, and anything the rules cannot ground goes to review instead of being guessed. The model only <b>chooses</b> a date operation; <b>code computes it</b>, through a <span class="mono">date_interval</span> tool and business-day arithmetic. At write time, an ordering check rejects anything closed before it was opened.</p>
+<h5>Example: timeline indexed by event date</h5>
+<div class="ex good">"in July"        → 2026-07-01 .. 2026-07-31  month
+"on Wednesday"   → 2026-09-02               day
+q12  2026-06-10 → 2026-08-03 = <span class="ok">54 days</span>
+q11  refund 21 Jul is before settlement 7 Aug  ✓
+"within 5 business days" of 2 Jul → due 2026-07-09
+
+<span class="ok">4 of 4</span> correct · ordering violations: 0 of 63 records</div>
+</div>
+</div>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">class TimedEvent(BaseModel):
+    event: str
+    expression: str                 <span class="c"># the words used: "on Wednesday"</span>
+    event_date: str | None          <span class="c"># resolved against the mention date</span>
+    mention_date: str
+
+g = ground_time("in July", "2026-09-04")       <span class="c"># TimeSpan(start='2026-07-01', end='2026-07-31', granularity='month')</span>
+
+@tool
+def date_interval(start: str, end: str) -> str:
+    s, e = date.fromisoformat(start), date.fromisoformat(end)
+    return f"{(e - s).days} days ({s:%A} to {e:%A})"
+
+check_temporal_order(record, rows)              <span class="c"># MemoTime: nothing closed before opened, nothing due before promised</span></pre></details>
+<div class="result"><h4>Measured</h4>
+<div class="stat-row"><div class="stat accent"><b>0 / 4</b><span>correct, by mention date</span></div><div class="stat teal"><b>4 / 4</b><span>correct, by event date</span></div><div class="stat"><b>5 / 5</b><span>model dates agree with rules</span></div><div class="stat gold"><b>0</b><span>ordering violations, 63 records</span></div></div>
+<p class="muted">Every wrong answer came from choosing the wrong dates, never from wrong arithmetic, which makes failures easy to diagnose.</p></div>
+<div class="callout"><b>Watch out.</b> Business days need a holiday calendar (NSW public holidays and bank holidays). What "within five business days" means is a policy definition that belongs to the bank, not to the model.</div>
+</div></section>
+
+<!-- ============================================================ PART II -->
+<div class="part" id="part2"><div class="kicker">Part II · Storage · survey §V</div><h2>How memory is organised</h2><p>Three structures the flat vector store cannot express: two time axes per fact, a tree of summaries, and a single edge that binds every party to a promise.</p></div>
+
+<section id="r3"><div class="num">03<small>storage</small></div><div class="in">
+<div class="meta"><span class="prio high">high priority</span><span class="srcline">Zep / Graphiti [18]</span></div>
+<h2>Bi-temporal edges: true on a date vs known on a date</h2>
+<p class="why">Audit and complaints questions are about what the bank <i>knew</i> when it acted, not only about what was true in the world.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>Arjun resigned as a director on 31 August, but the KYC system was only updated on 10 September. A banker asks: <i>who did our records show as directors on 5 September?</i> With only valid time, the vault answers with what was true, Priya alone. That is not what the bank's records showed, so it is the wrong answer for an audit.</p>
+<h5>Example: valid time only</h5>
+<div class="ex bad">Q  directors of Sharma Logistics on 2026-09-05,
+   as our records showed then?
+A  Priya Sharma          <span class="hl">← true, not what we knew</span>
+
+Without a recorded-at time the vault cannot
+reconstruct what the bank's records showed then.</div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Give every edge two times. <b>Valid time</b> is when it was true; <b>transaction time</b> is when the bank recorded it (the write timestamp). <b>Invalidate rather than overwrite</b>. Then query on both axes: true on <span class="mono">valid_on</span>, as known on <span class="mono">known_on</span>. A supersession that hadn't been recorded by the known-on date must not end the edge.</p>
+<h5>Example: the two-axis query</h5>
+<div class="ex good"><table><thead><tr><th>true on</th><th>known on</th><th>directors</th></tr></thead><tbody>
+<tr><td>08-01</td><td>09-05</td><td>Arjun, Priya</td></tr>
+<tr><td>08-01</td><td>09-27</td><td>Arjun, Priya</td></tr>
+<tr><td><span class="ok">09-05</span></td><td><span class="ok">09-05</span></td><td><span class="ok">Arjun, Priya</span> ← records were stale</td></tr>
+<tr><td>09-05</td><td>09-27</td><td>Priya</td></tr></tbody></table></div>
+</div>
+</div>
+<figure>
+<svg class="diagram" viewBox="0 0 760 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stale window between resignation and KYC update">
+  <rect x="234" y="40" width="324" height="44" fill="rgba(200,71,28,.18)"/>
+  <text x="396" y="30" class="d-small" text-anchor="middle">records stale: true and known disagree</text>
+  <line x1="40" y1="62" x2="720" y2="62" class="axis"/>
+  <line x1="40" y1="52" x2="234" y2="52" stroke="#8fc4c4" stroke-width="5"/><text x="40" y="45" class="d-small">Arjun director (valid time)</text>
+  <line x1="40" y1="74" x2="558" y2="74" stroke="#B8892B" stroke-width="5"/><text x="40" y="96" class="d-small">in the records (transaction time)</text>
+  <line x1="234" y1="36" x2="234" y2="110" stroke="#E9E5DB" stroke-dasharray="3 3"/><text x="234" y="126" class="d-small" text-anchor="middle">31 Aug resigned</text><text x="234" y="140" class="d-small" text-anchor="middle">valid_to</text>
+  <line x1="396" y1="36" x2="396" y2="110" stroke="#C8471C" stroke-width="2"/><text x="396" y="126" class="d-small" text-anchor="middle">5 Sep audit question</text>
+  <line x1="558" y1="36" x2="558" y2="110" stroke="#E9E5DB" stroke-dasharray="3 3"/><text x="558" y="126" class="d-small" text-anchor="middle">10 Sep KYC keyed</text><text x="558" y="140" class="d-small" text-anchor="middle">invalidated_at</text>
+</svg><figcaption>The two time axes for Arjun's directorship. A question asked between 31 August and 10 September has two correct answers depending on which axis it is about, and only a bi-temporal store can give both.</figcaption></figure>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">from memlab.techniques import BiTemporalFact, as_known
+
+facts = [BiTemporalFact("Arjun Sharma", "director_of", "Sharma Logistics",
+                        valid_from="2019-03-04", valid_to="2026-08-31",        <span class="c"># valid time</span>
+                        recorded_at="2019-03-04", invalidated_at="2026-09-10"), <span class="c"># transaction time</span>
+         BiTemporalFact("Priya Sharma", "director_of", "Sharma Logistics", "2019-03-04", None, recorded_at="2019-03-04")]
+
+as_known(facts, valid_on="2026-09-05", known_on="2026-09-05")   <span class="c"># Arjun, Priya: what the bank knew</span>
+as_known(facts, valid_on="2026-09-05", known_on="2026-09-27")   <span class="c"># Priya: what we know now</span>
+<span class="c"># stale on day d  =  as_known(d, d)  minus  as_known(d, today)</span></pre></details>
+<div class="callout"><b>Watch out.</b> Transaction time must be the actual write time in the system of record or the vault, never worked out later from the text. A supersession that hadn't been recorded yet must not end an edge in a known-on query.</div>
+</div></section>
+
+<section id="r4"><div class="num">04<small>storage</small></div><div class="in">
+<div class="meta"><span class="prio med">medium priority</span><span class="srcline">MemTree (§V) · ENGRAM [34] · SGMem [35]</span></div>
+<h2>A hierarchical summary tree</h2>
+<p class="why">Years of episodic history won't fit in a Context Pack, and a flat list of events hides the story.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>After three months the vault already holds 45 current episodic records and commitments for one customer. Read as a flat list, "three terminals, two failures, fixed on 3 August" is spread over eleven separate lines, and the history only gets longer each year.</p>
+<h5>Example: the flat leaves</h5>
+<div class="ex bad">45 records · <span class="hl">≈1,614 tokens</span>, one line per event
+2026-06-10  fault logged with merchant team, M-2287 ...
+2026-07-02  replacement terminal arrived 18 June ...
+2026-07-02  $29 waiver committed ...
+2026-07-28  replacement terminal began freezing ...
+2026-07-28  refund for D-4471 posted 21 July ...
+...  (the story has to be pieced together by the reader)</div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Cluster the leaves into 3 to 6 <b>topic nodes</b>. Each topic has a dated two-sentence summary and the ids of its member records, and a <b>root summary</b> sits above them. Answer from the summaries and <b>drill down</b> to the member records when a question needs the evidence. Check three things on every build: <b>coverage</b> (every record placed), duplicates, and compression.</p>
+<h5>Example: the tree, and a drill-down</h5>
+<div class="ex good">root  Relationship Jun–Sep 2026: EFTPOS faults, fee
+      delays, equipment finance, Newcastle expansion.
+├ EFTPOS terminal fault and resolution        11
+├ Terminal rental fee waiver dispute          13
+├ Equipment finance and fleet expansion        4
+├ Duplicate charge dispute                     4
+├ Newcastle depot and merchant facility       10
+└ Newcastle staffing and cash flow             1
+
+"what went wrong with the terminals?"
+ → <span class="ok">EFTPOS terminal fault</span> → its 11 records</div>
+</div>
+</div>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">leaves = [r for r in rows if r.get("layer") in ("episodic", "commitment") and r["current"]]   <span class="c"># vault records, not raw transcripts</span>
+result = build_summary_tree(leaves, max_topics=6)      <span class="c"># memlab.techniques; records need "id" and "text"</span>
+result["tree"].root_summary, result["tree"].topics      <span class="c"># each topic: name, summary, member_ids</span>
+result["coverage"], result["duplicates"], result["compression"]</pre></details>
+<div class="result"><h4>Measured</h4>
+<div class="stat-row"><div class="stat teal"><b>3.2×</b><span>smaller: 512 vs 1,614 tokens</span></div><div class="stat accent"><b>43 / 45</b><span>coverage: 2 records dropped</span></div><div class="stat"><b>0</b><span>duplicates</span></div><div class="stat"><b>6</b><span>topic nodes</span></div></div>
+<p><span class="pill fail">FAIL</span> Coverage has to be 100%. In this run the tree silently forgot two records, which is exactly why the check exists: re-run, or attach the missing ids to the nearest topic in code.</p></div>
+<div class="callout"><b>Watch out.</b> A summary is derived memory. It inherits the most restrictive audience of its members, and it has to be recomputed when a member changes (a commitment closes, a record is superseded). The survey stresses <i>recursive update of ancestor summaries</i> rather than appending.</div>
+</div></section>
+
+<section id="r5"><div class="num">05<small>storage</small></div><div class="in">
+<div class="meta"><span class="prio high">high priority</span><span class="srcline">HyperGraphRAG [39] · HyperG [40]</span></div>
+<h2>Commitments as hyperedges</h2>
+<p class="why">A commitment isn't a pair of entities. It binds a bank, a customer, a third party, an action, a due date and a reference into one promise.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>"The bank will send Priya and Deepak the Newcastle merchant application by 25 September (re-raised from W-5530)." Split into pairwise triples, the vault no longer knows which due date belongs to which promise. Even a flat set of members has <b>no roles</b> (who promised, who benefits, who is copied), and it <b>misses participants</b> the extractor didn't list as entities.</p>
+<h5>Example: flat hyperedge lookup</h5>
+<div class="ex bad">12 commitments, mean 3.2 members each
+promises_involving("C-9912")
+  [open  due 2026-10-05] resolve complaint C-9912 ...  ✓
+promises_involving("Deepak Rao")
+  <span class="hl">none in this build</span>
+  ← yet the overdue Newcastle promise must copy him</div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Model each commitment as <b>one hyperedge</b> that can be looked up through any member, including reference numbers such as C-9912. Then <b>label roles</b>. One model call per open commitment reads the commitment and the customer's standing instructions ("copy my accountant on loan and merchant paperwork"). It returns each role with the <b>source</b> it came from, and says whether the record is really a bank promise to the customer. In a property graph this is the reified form: the promise becomes a node.</p>
+<h5>Example: role-labelled hyperedge</h5>
+<div class="ex good">c5f1a311 · due 2026-09-25 · <span class="hl">overdue</span>
+  promisor     the bank
+  beneficiary  Priya Sharma, Sharma Logistics
+  object       Newcastle merchant facility application
+  copy_to      <span class="ok">Deepak Rao (accountant)</span>
+               source contact_centre:CALL-88213
+
+2 of 2 open items are bank promises;
+<span class="ok">both</span> require copying Deepak (flat lookup: 0)</div>
+</div>
+</div>
+<figure>
+<svg class="diagram" viewBox="0 0 760 170" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Role-labelled hyperedge for one commitment">
+  <rect x="270" y="58" width="220" height="54" rx="8" class="box accent"/><text x="380" y="81" class="d-box" text-anchor="middle">promise c5f1a311</text><text x="380" y="100" class="d-small" text-anchor="middle">due 25 Sep · overdue</text>
+  <rect x="20" y="10" width="170" height="36" rx="18" class="box"/><text x="105" y="33" class="d-small" text-anchor="middle">the bank</text>
+  <rect x="20" y="124" width="170" height="36" rx="18" class="box"/><text x="105" y="147" class="d-small" text-anchor="middle">Priya Sharma</text>
+  <rect x="570" y="10" width="180" height="36" rx="18" class="box"/><text x="660" y="33" class="d-small" text-anchor="middle">Newcastle application</text>
+  <rect x="570" y="124" width="180" height="36" rx="18" class="box teal"/><text x="660" y="147" class="d-small" text-anchor="middle">Deepak Rao</text>
+  <path d="M190,30 L270,68" class="flow"/><text x="200" y="62" class="d-small">promisor</text>
+  <path d="M270,102 L190,140" class="flow"/><text x="196" y="118" class="d-small">beneficiary</text>
+  <path d="M490,68 L570,30" class="flow"/><text x="520" y="62" class="d-small">object</text>
+  <path d="M490,102 L570,140" class="flow"/><text x="500" y="132" class="d-small">copy_to · CALL-88213</text>
+</svg><figcaption>One promise, four roles, each with its source. "What do we owe that involves the accountant?" returns the overdue promise in a single lookup.</figcaption></figure>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">class RoleValue(BaseModel):
+    role: Literal["promisor", "beneficiary", "on_behalf_of", "object", "copy_to", "reference", "site"]
+    value: str
+    source: str                          <span class="c"># the source reference this role came from</span>
+
+class RoleEdge(BaseModel):
+    bank_promise_to_customer: bool       <span class="c"># False for internal suggestions, customer requests, agent notes</span>
+    roles: list[RoleValue]
+
+prompt = f"Commitment [{r['source_ref']}], due {r['due_date']}: {r['text']}\n\nStanding instructions:\n" + standing_lines
+edge = labeller(prompt, structured_output_model=RoleEdge).structured_output</pre></details>
+<div class="callout"><b>Watch out</b> for over-application. A model given "copy my accountant on paperwork" may attach it to a promised phone call. A role drawn from a standing instruction, rather than from the commitment itself, is the one a reviewer should check, and a production rule can limit <span class="mono">copy_to</span> to paperwork. Canonicalise member names too, or "Deepak" and "Deepak Rao" never meet.</div>
+</div></section>
+
+<!-- ============================================================ PART III -->
+<div class="part" id="part3"><div class="kicker">Part III · Retrieval · survey §VI</div><h2>How memory is found</h2><p>Anchor on entities, expand through the graph only when it pays, respect the question's time window, go back for what is missing, and combine memory with live systems under an explicit authority rule.</p></div>
+
+<section id="r6"><div class="num">06<small>retrieval</small></div><div class="in">
+<div class="meta"><span class="prio med">medium priority</span><span class="srcline">§VI pipeline · Mem0 [31] · Zep [18]</span></div>
+<h2>Routed traversal and the token budget</h2>
+<p class="why">Graph traversal improves evidence on relationship questions, and costs tokens on every question.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>There are two simple settings, and both are wrong in a different way. Never traversing (an entity hop only) leaves relationship questions short of evidence. Always traversing two hops fixes them, but sends about 50% more context on every question, including ones about fees or dates where the graph adds nothing.</p>
+<h5>Example: the two settings</h5>
+<div class="ex bad">never (entity hop)
+  relationship questions  sufficiency <span class="hl">0.77</span>
+always (2-hop graph)
+  all questions           <span class="hl">688 tokens</span> on average
+                          (vs 453 without the graph)</div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Use the survey's three-stage pipeline: <b>anchor</b> on the entities named, <b>expand</b> within n hops, and <b>stop</b> according to a policy. Here the stopping policy is a deterministic router that expands only when the question is about relationships (who, owns, director, related, premises, guarantor, accountant, ...).</p>
+<h5>Example: routed</h5>
+<div class="ex good">RELATIONSHIP = re.compile(r"\b(who|owns?|owner|director|
+  related|connected|premises|guarant\w*|accountant|
+  copied|parent|subsidiar\w*)\b", re.I)
+
+routed  all questions   sufficiency <span class="ok">0.95</span> at <span class="ok">525 tokens</span>
+        relationship    sufficiency <span class="ok">1.00</span></div>
+</div>
+</div>
+<div class="result"><h4>Measured</h4>
+<table><thead><tr><th>config</th><th>sufficiency</th><th>complete</th><th>tokens</th><th>relationship Qs: sufficiency</th></tr></thead><tbody>
+<tr><td>never (entity hop)</td><td>0.87</td><td>0.73</td><td>453</td><td>0.77</td></tr>
+<tr><td>always (graph)</td><td>0.95</td><td>0.87</td><td>688</td><td>1.00</td></tr>
+<tr class="pass"><td><b>routed</b></td><td><b>0.95</b></td><td><b>0.87</b></td><td><b>525</b></td><td><b>1.00</b></td></tr>
+</tbody></table>
+<p class="muted">Routing keeps all of the graph's gain and removes about two thirds of its extra token cost.</p></div>
+<div class="callout"><b>Watch out.</b> A keyword router misses paraphrases ("whose building is it?"). Log every query the router sent to the graph and every one it didn't, audit a sample, and move to a learned classifier once there is traffic.</div>
+</div></section>
+
+<section id="r7"><div class="num">07<small>retrieval</small></div><div class="in">
+<div class="meta"><span class="prio med">medium priority</span><span class="srcline">AssoMem [51] · Zep [18] · LiCoMemory [52] · MemoTime [38]</span></div>
+<h2>A temporal query operator</h2>
+<p class="why">"As of 1 August", "in July" and "the latest" are time constraints inside the question. Retrieval should apply them without the caller having to.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>The service applies an as-of view only when a caller passes <span class="mono">as_of</span>. Otherwise similarity search returns the top-k closest records whatever their date. "What happened in July?" gets events from June and September, and "the latest on the depot" may surface the superseded 2 November opening date.</p>
+<h5>Example: no time handling</h5>
+<div class="ex bad">"What happened with Priya's account in July?"
+  → top-8 by similarity, <span class="hl">any month</span>; July events
+    beyond the top 8 are silently dropped
+"What is the latest on the Newcastle depot?"
+  → may rank "opens 2 November" above the
+    <span class="hl">later change to 16 November</span></div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Parse the question deterministically into one of three kinds of constraint. <b>As of a date</b> becomes a valid-time view. <b>In a month or the last N days</b> becomes a window that returns <i>every</i> permitted event in it, because a window is a structured question, not a ranking. <b>Latest, recent or current</b> becomes exponential recency decay with a 30-day half-life. Decay never applies to commitments or verified facts.</p>
+<h5>Example: parsed and applied</h5>
+<div class="ex good">v1 "as of 1 August 2026" → {'as_of': '2026-08-01'}  ✓ gold
+v2, v3 likewise parse to their gold dates          ✓
+"in July" → window 2026-07-01..07-31
+  → <span class="ok">13 events, every one dated July</span>
+"latest on Newcastle depot" (decay)
+  → <span class="ok">2026-09-22 opening moved to Mon 16 November</span></div>
+</div>
+</div>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">def parse_time(query: str, today: str = TODAY) -> dict:
+    if m := re.search(r"as of (\d{1,2}) (january|...|december) (\d{4})", q): return {"as_of": ...}
+    if m := re.search(r"\bin (january|...|december)(?: (\d{4}))?", q):    return {"window": (first_day, last_day)}
+    if m := re.search(r"last (\d+) (day|week)s?", q):                     return {"window": (today - n, today)}
+    return {"recency": bool(re.search(r"\b(latest|recent|now|current)\b", q))}
+
+score * math.exp(-age_days * math.log(2) / half_life_days)     <span class="c"># recency branch; skipped for protected records</span></pre></details>
+<div class="callout"><b>Watch out.</b> "Last Friday" in a <i>question</i> is relative to the date the question is asked, not the conversation date. Never apply decay to commitments or verified facts: an old promise is still owed, and an old KYC fact is still true.</div>
+</div></section>
+
+<section id="r8"><div class="num">08<small>retrieval</small></div><div class="in">
+<div class="meta"><span class="prio med">medium priority</span><span class="srcline">MemoTime [38] · Yan et al. [66] · RCR-Router [68] · MemSearcher [69]</span></div>
+<h2>Multi-round retrieval with a sufficiency check</h2>
+<p class="why">The vault's most persistent failures are multi-part questions, where one pass of retrieval surfaces only some of the parts.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>Questions like "what is still open <i>and</i> what has been closed", "what the system says <i>and</i> what the customer told us", or "the whole history of this issue" need evidence from several places. Single-shot top-k retrieval returns whatever is most similar to the question as a whole, and the answer leaves out the parts it never saw.</p>
+<h5>Example: single-shot vault agent on the hard questions</h5>
+<div class="ex bad">v4   <span class="hl">WRONG</span>
+v8   <span class="hl">WRONG</span>
+v16  <span class="hl">WRONG</span>
+v18  CORRECT
+→ 1 of 4</div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Treat memory access as a loop. <b>Plan</b> 2 to 4 sub-queries. <b>Retrieve</b> each one through the authorised service, adding the structured open-commitments list when the question is about commitments. Ask a model whether the evidence is <b>sufficient</b> and what is <b>missing</b>. Retrieve once more for the missing parts (capped at 2 rounds), then <b>answer only from the evidence</b>.</p>
+<h5>Example: multi-round, same questions, same judge</h5>
+<div class="ex good">v4   <span class="ok">CORRECT</span>
+v8   <span class="ok">CORRECT</span>
+v16  <span class="ok">CORRECT</span>
+v18  <span class="hl">WRONG</span>   ← a regression, not only gains
+→ 3 of 4</div>
+</div>
+</div>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">queries = planner(question, structured_output_model=Plan).sub_questions          <span class="c"># 2 to 4 retrieval queries</span>
+for _ in range(rounds):                                                          <span class="c"># rounds = 2</span>
+    for sq in queries:
+        for h in service.search(principal, customer_id, sq, as_of=parse_time(question).get("as_of")):
+            evidence[h.row["id"]] = h.row
+    if "commitment" in route_layers(question):                                   <span class="c"># structured tool stays in the loop</span>
+        evidence |= {r["id"]: r for r in permitted_rows if r.get("state")}
+    verdict = checker(question + evidence, structured_output_model=Sufficiency)  <span class="c"># sufficient? missing?</span>
+    if verdict.sufficient or not verdict.missing: break
+    queries = verdict.missing</pre></details>
+<div class="callout"><b>Watch out.</b> Each round costs two or three more model calls. Four questions is a small sample, so re-run before concluding anything (recipe 20). Keep the structured tools (open commitments, as-of views) inside the loop: a sufficiency checker can't know about a commitment that retrieval never surfaced.</div>
+</div></section>
+
+<section id="r9"><div class="num">09<small>retrieval</small></div><div class="in">
+<div class="meta"><span class="prio high">high priority</span><span class="srcline">§VI hybrid-source retrieval · MemSearcher [69]</span></div>
+<h2>Hybrid sources with an authority rule</h2>
+<p class="why">Memory holds what was <i>said</i>; systems of record hold what <i>is</i>. An agent needs both, and a rule for which one wins.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>The CRM says Sharma Logistics runs 14 trucks (as at 6 October 2025). On 28 July Priya said 16. The agent has a live system-of-record tool and an authority rule in its prompt: "if memory and a system disagree, give both." It still reported only the CRM's figure, and in testing it dropped the customer's figure on every run.</p>
+<h5>Example: prompt rule only</h5>
+<div class="ex bad">Fleet size (as at 2025-10-06, from CRM):
+  - 14 trucks                 <span class="hl">← 16 never mentioned</span>
+
+products from the system        PASS
+both fleet figures (14 and 16)  <span class="hl">FAIL</span>
+contact preference from memory  PASS</div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Make the rule structural. The vault already detects the conflict deterministically (<span class="mono">conflicts()</span>), so attach that <b>conflict note as data</b> to the system-of-record tool's result. The agent then receives "the CRM says 14; the customer said 16 on 28 July" as part of the answer it is given. It doesn't have to remember to look for it.</p>
+<h5>Example: with the vault's conflict note</h5>
+<div class="ex good">Fleet size:
+  - Bank record shows 14 trucks (as at 2025-10-06, CRM)
+  - <span class="ok">Conflict: Priya stated 16 trucks on 2026-07-28</span>
+    (unverified; record not updated)
+
+products · <span class="ok">both fleet figures</span> · contact pref   all PASS</div>
+</div>
+</div>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">vault_notes = conflicts(rows)                         <span class="c"># memlab.vault: deterministic system-vs-customer conflicts</span>
+
+@tool
+def system_of_record_with_conflicts(attribute: str) -> str:
+    notes = [n for n in vault_notes if attribute in n]
+    return lookup(attribute) + ("\nVault conflict note (present it to the banker): " + " ".join(notes) if notes else "")</pre></details>
+<div class="result"><h4>Measured</h4>
+<table><thead><tr><th>check</th><th>prompt rule only</th><th>with the vault's note</th></tr></thead><tbody>
+<tr><td>products from the system (MID-55120)</td><td><span class="pill pass">PASS</span></td><td><span class="pill pass">PASS</span></td></tr>
+<tr><td>both fleet figures, CRM marked authoritative</td><td><span class="pill fail">FAIL</span></td><td><span class="pill pass">PASS</span></td></tr>
+<tr><td>contact preference from memory (phone after 4pm)</td><td><span class="pill pass">PASS</span></td><td><span class="pill pass">PASS</span></td></tr>
+</tbody></table>
+<p><b>The general lesson:</b> anything the agent <i>must</i> say should reach it as data from the vault, not as a rule it has to remember.</p></div>
+<div class="callout"><b>Watch out.</b> A live lookup reads another system's data, so it needs the same principal, purpose and audit as a memory read. Cite its result; never write it back into memory as a verified fact.</div>
+</div></section>
+
+<!-- ============================================================ PART IV -->
+<div class="part" id="part4"><div class="kicker">Part IV · Evolution · survey §VII</div><h2>How memory changes without a new interaction</h2><p>Merging, forgetting, inferring and learning all change memory without anyone saying anything new. In a bank, each of these needs the same lineage, policy and human approval as a write.</p></div>
+
+<section id="r10"><div class="num">10<small>evolution</small></div><div class="in">
+<div class="meta"><span class="prio med">medium priority</span><span class="srcline">GraphRAG [75] · RecallM [76] · Mem0 [31] · FLEX [78]</span></div>
+<h2>Consolidation of near-duplicates</h2>
+<p class="why">The same fact arrives through several channels in different words, so Context Packs repeat themselves. A wrong merge, though, loses a commitment.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>"Copy Deepak on loan paperwork", "send the application to her and Deepak" and "Deepak to be copied on Newcastle paperwork" are one fact said three ways. Exact-text and same-slot matching miss them. The opposite risk is just as real: two different promises about the same waiver embed almost on top of each other.</p>
+<h5>Example: close embeddings, different facts</h5>
+<div class="ex bad">top pair similarities
+  0.94 0.92 0.91 0.89 0.88 0.88 0.85 0.85 0.84 0.83
+
+0.88  "The bank committed to credit ... $29 ..."
+      "The bank committed to process a waiver of the $29 ..."
+  <span class="hl">a threshold-only merge would fold two promises into one</span></div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p><b>Embed</b> current records that don't come from a system of record. <b>Propose</b> same-layer pairs at or above 0.80. Pass each pair through a <b>model gate</b>: "same fact, with no detail in one that contradicts the other?" Apply hard rules before the model: never merge across due dates, values or customers. <b>Mark, don't delete</b>: the later record gets <span class="mono">merged_into</span>, and its source becomes a reconfirmation of the record that is kept.</p>
+<h5>Example: the gate's decisions</h5>
+<div class="ex good">0.94 keep  $29 waiver ...  ||  $29 waiver ...
+0.92 keep  $29 waiver ...  ||  $29 waiver ...
+0.88 keep  committed to credit  ||  committed to process
+...
+<span class="ok">0 merges from 8 proposals</span> over 52 records
+→ in this build the gate rejected every proposal</div>
+</div>
+</div>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">proposals = [(s, a, b) for s, a, b in pairs if s >= 0.80 and a["layer"] == b["layer"]][:8]
+verdicts  = run_parallel(lambda p: judge(f"A: {p[1]['text']}\nB: {p[2]['text']}", Same), proposals)
+for a, b in merged:
+    keep, drop = sorted((a, b), key=lambda r: r["observed_on"])
+    vault.update(drop["id"], metadata={"merged_into": keep["id"]})                       <span class="c"># reversible</span>
+    vault.update(keep["id"], metadata={"confirmed_by": keep_confirmed + [drop["source_ref"]]})</pre></details>
+<div class="callout"><b>Watch out.</b> Similar isn't the same: "promised by 11 September" and "promised by 25 September" embed close together and are different commitments. Merges per proposal shows how much the gate rejects; a gate that never rejects anything isn't doing its job.</div>
+</div></section>
+
+<section id="r11"><div class="num">11<small>evolution</small></div><div class="in">
+<div class="meta"><span class="prio low">lower priority</span><span class="srcline">MemGPT [62] · MemoryBank [81] · Memory OS [83]</span></div>
+<h2>Significance and forgetting</h2>
+<p class="why">Some records are central to the relationship; others were noise the day they were written. Rule-based retention treats every record of a kind the same.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>Retention by rule keeps or drops records by type and age. That treats "the replacement terminal has been reliable" exactly like the record of the $29 waiver that turned into a complaint. Meanwhile the vault and every Context Pack keep growing.</p>
+<h5>Example: every record weighs the same</h5>
+<div class="ex bad">63 records for one customer after three months
+no signal for which deserve review first
+an algorithm that deletes by score would remove
+commitments and verified facts along with noise</div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Score significance as <b>PageRank</b> over the bipartite graph of records and the entities they mention (plus entity–entity edges), multiplied by <b>recency decay</b> exp(−age/90 days). <b>Protected classes</b> (commitments, verified facts, open items) are never candidates. The output is an ordered <b>review list for a person</b>, not a deletion.</p>
+<h5>Example: the review list</h5>
+<div class="ex good">least significant, not protected
+  6.3e-04 [semantic]   replacement terminal performing reliably
+  1.0e-03 [preference] contact preference update, 14 Aug
+  1.3e-03 [episodic]   backup mobile reader in use
+most significant
+  1.0e-02 [episodic]   $29 waiver W-5530 credited
+  1.0e-02 [episodic]   $29 waiver not processed by the date</div>
+</div>
+</div>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">rank = pagerank(links)              <span class="c"># links: rec:&lt;id&gt; &lt;-&gt; ent:&lt;name&gt;, plus graph edges between entities</span>
+protected = lambda r: r["layer"] == "commitment" or r["verification"] == "verified" or r.get("state") in ("open", "overdue")
+significance = sorted((rank["rec:" + r["id"]] * math.exp(-days_between(r["observed_on"], TODAY) / 90), r) for r in rows)
+review_first = [r for s, r in significance if not protected(r)][:5]</pre></details>
+<div class="callout"><b>Watch out.</b> In a bank, forgetting is governed by a records schedule and legal holds, not by an algorithm. Significance ranks <i>what to review first</i>; it doesn't authorise deletion.</div>
+</div></section>
+
+<section id="r12"><div class="num">12<small>evolution</small></div><div class="in">
+<div class="meta"><span class="prio med">medium priority</span><span class="srcline">Think-on-Graph [79] · Reasoning on Graphs [82]</span></div>
+<h2>Inferred links, labelled as inference</h2>
+<p class="why">The graph implies relationships that no record states. They are useful to a relationship manager, and they become a privacy and accuracy risk the moment one is shown as fact.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>A banker asks whether Priya has an interest in the Parramatta depot. No record says so. The graph implies it: she directs the company that owns it. An agent that reasons over edges will reach that conclusion and may state it as fact, including in a channel that may not see the property company's records.</p>
+<h5>Example: an unlabelled conclusion</h5>
+<div class="ex bad">Priya Sharma has an interest in the Parramatta depot.
+  <span class="hl">no source · no confidence · no audience check</span>
+  shown to the VRM in the customer's own channel?</div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Use a small set of <b>explicit inference rules</b>, each with a confidence. Every inferred edge carries its <b>premises</b> (the edges and sources it came from) and is labelled <b>INFERRED</b>. It is usable only by a principal who may read <b>every</b> premise, so it inherits the most restrictive policy of what it was derived from.</p>
+<h5>Example: the inferred edge</h5>
+<div class="ex good">INFERRED Priya Sharma --has_interest_in--> Parramatta depot
+  confidence 0.7
+  because  Priya director_of Sharma Property Holdings
+             (kyc:CIF-100232:directors)
+           SPH owns Parramatta depot (kyc:CIF-100231:related)
+  usable by  banker_alex <span class="ok">True</span>   vrm_priya <span class="ok">False</span></div>
+</div>
+</div>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">RULES = [("director_of", "owns",  "has_interest_in",          0.7),
+         ("director_of", "holds", "is_connected_to_facility", 0.6)]
+<span class="c"># for a, b in current edges: if a.predicate == p1 and b.predicate == p2 and a.object == b.subject -> infer</span>
+usable = all(graph.usable(e, principal, purpose, TODAY) for e in inferred["premises"])</pre></details>
+<div class="result"><h4>Measured</h4><p>Four inferred edges in this build (Priya and Arjun × depot interest and property-loan connection). All four are usable by the banker and none by the customer-facing VRM.</p></div>
+<div class="callout"><b>Watch out.</b> Inference is how relational privacy leaks (recipe 16). An inferred "interest" is not a beneficial-ownership finding, so label it so that nobody acts on it as one.</div>
+</div></section>
+
+<section id="r13"><div class="num">13<small>evolution</small></div><div class="in">
+<div class="meta"><span class="prio med">medium priority</span><span class="srcline">ExpeL [88] · Matrix [84] · Memory-R1 [54] · MemEvolve [86]</span></div>
+<h2>Experience memory, with a person in the loop</h2>
+<p class="why">The vault records what happened next. That is experience the servicing team could learn from, but a learned rule changes how <i>every</i> customer is treated.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>The team's playbooks were written by hand. The vault shows outcomes the playbooks don't cover: a fee waiver lost in a platform migration and missed twice before it was credited, and a terminal replaced twice before a technician fixed it. Nobody turns that into guidance. And if a model learned rules automatically, policy would change with no owner.</p>
+<h5>Example: the hand-written playbooks</h5>
+<div class="ex neutral">1 When a terminal fails a second time, book a
+  technician rather than shipping another unit.
+2 When a promised waiver is overdue, escalate, give a
+  new date, record it as a commitment.
+3 When a customer has an accountant on file, copy them
+  on loan and merchant paperwork.
+<span class="dim">nothing about migrations losing pending requests</span></div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>A model reads the episodic history and <b>proposes</b> at most four <b>skills</b> (what worked, to repeat) and <b>lessons</b> (what failed, to avoid). Each proposal cites evidence ids, and proposals with invented ids are dropped automatically. Nothing is used until an <b>authorised reviewer approves</b> it into the agent's procedural memory, with their name and the date.</p>
+<h5>Example: a proposal, then approval</h5>
+<div class="ex good">[lesson] Do not lose track of fee waiver requests during
+  system migrations; verify every pending request is
+  transferred to the new platform.
+  when: migrating merchant operations to a new platform
+  evidence: 065ddaa4 6e512b7b b4bf0790 (<span class="ok">0 invented</span>)
+
+approve(lesson, alex)  → role relationship_manager ✓
+  → procedural memory 90e9a56c</div>
+</div>
+</div>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">class Lesson(BaseModel):
+    kind: Literal["skill", "lesson"]
+    statement: str; applies_when: str; evidence_ids: list[str]
+
+def approve(lesson, reviewer):
+    if reviewer.role != "relationship_manager":
+        raise PermissionError("only an authorised reviewer may approve a playbook")
+    return write_playbook(vault, "context_agent", {"text": lesson.statement + f" (approved by {reviewer.id} on {TODAY})"})</pre></details>
+<div class="result"><h4>Measured</h4><p>4 proposals, 0 with invented evidence. Two partly rediscover hand-written playbooks (technician visits, keeping recipients aligned); two are new (checking pending requests during migrations, adjusting commitments when timelines move).</p></div>
+<div class="callout"><b>Watch out.</b> In a bank, a learned playbook is a policy change. It needs an owner, an approval and a review date, which is why the recipe stops at a proposal queue rather than learning memory operations end to end.</div>
+</div></section>
+
+<section id="r14"><div class="num">14<small>evolution</small></div><div class="in">
+<div class="meta"><span class="prio med">medium priority</span><span class="srcline">ProMem [89] · AgentEvolver [90]</span></div>
+<h2>Active inquiry: ask, once, for what is missing</h2>
+<p class="why">The vault knows what it doesn't know, but nobody asks.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>Some slots have never been filled. Some customer-stated facts are months old and come from a single source. Some disagree with the system of record. The agent works around these gaps, or worse, asks the customer again for something already on file, which customers notice and dislike.</p>
+<h5>Example: what the vault is missing</h5>
+<div class="ex bad">no value on file for <span class="hl">staff_count</span>
+contact_preference = 'phone calls after 4pm'
+  customer-stated, single-source, from 2026-08-14
+depot_location = 'Parramatta, western Sydney'
+  customer-stated, single-source, from 2026-06-10
+fleet_size: customer's '16 trucks' differs from CRM</div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Detect gaps <b>deterministically</b>, in three kinds: <b>missing</b> (a required slot never filled), <b>stale</b> (unverified, unconfirmed, older than 30 days) and <b>conflicting</b> (differs from a system of record). A model then picks the single most useful gap and phrases <b>one</b> question per contact. A repeat-ask check makes sure it never asks about something already on file that isn't a gap.</p>
+<h5>Example: the next contact</h5>
+<div class="ex good">VRM, end of the next chat:
+  "How many staff members does your business
+   currently have?"
+  fills: staff_count
+repeat-ask check: <span class="ok">fills a listed gap → inquiry, not a repeat</span></div>
+</div>
+</div>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">REQUIRED = ["contact_preference", "accountant", "fleet_size", "expansion_plan", "staff_count"]
+gaps  = [f"no value on file for {s}" for s in REQUIRED if s not in slots]
+gaps += [stale(r) for r in slots.values() if r["verification"] == "unverified" and not r.get("confirmed_by")
+         and days_between(r["observed_on"], TODAY) > 30]
+gaps += [conflict(r) for r in rows if r.get("conflicts_with") and r["current"]]
+ask = asker("Gaps:\n" + "\n".join(gaps), structured_output_model=Ask)     <span class="c"># one question; never card or account numbers</span></pre></details>
+<div class="callout"><b>Watch out.</b> Asking is customer contact. It needs a purpose the customer agreed to and a cap (one question, not a survey), and the answer is stored as customer-stated, so it still doesn't overwrite a system of record.</div>
+</div></section>
+
+<!-- ============================================================ PART V -->
+<div class="part" id="part5"><div class="kicker">Part V · Open challenges §X and evaluation §VIII</div><h2>What can go wrong with the graph itself</h2><p>Quality, privacy, poisoning and concurrency are the survey's open challenges. Benchmarks and run-to-run stability decide whether any of the earlier gains are real.</p></div>
+
+<section id="r15"><div class="num">15<small>challenges</small></div><div class="in">
+<div class="meta"><span class="prio med">medium priority</span><span class="srcline">§X graph quality · [190] · [191] · Zep [18] · MemBench [103] · [192]</span></div>
+<h2>Intrinsic quality of the memory graph</h2>
+<p class="why">Every other metric measures answers. The graph itself can be wrong long before any answer is.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>Orphaned entities, duplicate nodes, edges their own source record doesn't support, and "functional" relations with two current values (two owners of one asset). None of these shows up in answer accuracy until a question happens to depend on the bad edge.</p>
+<h5>Example: problems no answer metric surfaced</h5>
+<div class="ex bad">edge  Sharma Logistics operates_from Parramatta depot
+      <span class="hl">not supported by its record</span> (judge)
+<span class="hl">18 entities</span> named in records but absent from the graph</div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Track one metric set per <b>dimension</b> on every build, like the release-gate rows. <b>Structural</b>: nodes, components, entities missing from the graph. <b>Semantic</b>: the share of edges a judge confirms their record states. <b>Temporal</b>: closed windows, and functional predicates violated now. <b>Operational</b>: build and traversal latency.</p>
+<h5>Example: this build's quality report</h5>
+<div class="ex good">structural   9 nodes · 18 edges · 1 component
+             9 distinct predicates
+semantic     <span class="ok">17 / 18</span> edges supported by their record
+temporal     2 closed windows · 0 functional violations
+             16 edges valid now
+operational  build 2 ms · 2-hop traversal 0.14 ms</div>
+</div>
+</div>
+<div class="callout"><b>Watch out.</b> A falling share of supported edges is an extraction regression, visible before any answer goes wrong. At this size the operational numbers are trivial. Rebuilding the graph after every write is a notebook convenience, not a design: production needs incremental updates.</div>
+</div></section>
+
+<section id="r16"><div class="num">16<small>challenges</small></div><div class="in">
+<div class="meta"><span class="prio high">high priority</span><span class="srcline">§X privacy protection · Mueller et al. [198]</span></div>
+<h2>Relational privacy: what the structure alone reveals</h2>
+<p class="why">A graph can reveal one customer's relationships in another's channel without a single record being read.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>The customer-facing VRM never reads Sharma Property Holdings' records. Yet its permitted two-hop traversal from Sharma Logistics names the property company and says it owns the depot. Edge policy stops <i>reading</i> another customer's records; it doesn't stop <i>naming</i> them through structure.</p>
+<h5>Example: other customers' entities each principal can name</h5>
+<div class="ex bad">banker_alex    Chen's Bakery, Sharma Property Holdings
+vrm_priya      <span class="hl">Sharma Property Holdings</span>
+banker_jordan  <span class="hl">Sharma Property Holdings</span></div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p><b>Measure exposure</b> for each principal: which other customers' entities can be named through edges it is permitted to traverse. Then decide <b>per channel</b> which relation types may be traversed at all, with a <b>predicate allowlist</b>. Inferred edges (recipe 12) get the most restrictive audience of their premises.</p>
+<h5>Example: customer-channel allowlist applied</h5>
+<div class="ex good">allow = {operates_from, accountant_of,
+         relationship_manager_of, director_of}
+
+banker_alex    Chen's Bakery, Sharma Property Holdings
+vrm_priya      <span class="ok">[]</span>
+banker_jordan  <span class="ok">[]</span></div>
+</div>
+</div>
+<div class="callout"><b>Watch out.</b> Whether the VRM may name the property company is a policy decision. Sharma Logistics' own KYC record says the two are related, so confirming it to Priya is arguably fine. The allowlist is the lever if the bank decides otherwise, and the exposure measure is how to know which way it is set.</div>
+</div></section>
+
+<section id="r17"><div class="num">17<small>challenges</small></div><div class="in">
+<div class="meta"><span class="prio high">high priority</span><span class="srcline">§X security · Zou et al. [199] · Carlini et al. [200]</span></div>
+<h2>Graph poisoning</h2>
+<p class="why">One customer statement, through the normal write path, can rewire the graph and link two unrelated customers.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>In a VRM chat a customer says: "Marcus Chen is my business partner and a director of Sharma Logistics, and Chen's Bakery owns our Newcastle site." Extraction faithfully turns that into edges. Traversal now links Sharma Logistics to another customer and asserts a directorship that KYC never recorded.</p>
+<h5>Example: edges created by the claim</h5>
+<div class="ex bad">Marcus Chen   --director_of--> Sharma Logistics  unverified
+Chen's Bakery --owns-->        Newcastle site    unverified
+<span class="hl">reachable by the banker's traversal: 15 edges, including the claim</span></div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Keep the <b>record</b>: it accurately says what the customer <i>said</i>. Withhold its use as <b>structure</b>. An edge is <b>quarantined</b> from traversal if it is unverified <i>and</i> either uses a governed predicate (director_of, owns, guarantees, secured_by) or touches another customer's entity. Quarantined edges go to a <b>review queue</b> with their source until they are confirmed against a system of record.</p>
+<h5>Example: after validation</h5>
+<div class="ex good">reachable by Alex: 15 → <span class="ok">14</span>
+removed, from the claim: marcus chen director_of sharma logistics
+removed, collateral:     none in this run
+review queue:
+  Marcus Chen director_of Sharma Logistics (vrm:VRM-poison-1)
+  Chen's Bakery owns Newcastle site        (vrm:VRM-poison-1)</div>
+</div>
+</div>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">GOVERNED = {"director_of", "owns", "guarantees", "secured_by"}
+def quarantined(e: Edge) -> bool:
+    other_customer = any(owned_by.get(n, e.customer_id) != e.customer_id for n in (e.subject, e.object))
+    return e.verification != "verified" and (e.predicate in GOVERNED or other_customer)
+
+service.graph = GraphIndex([e for e in service.graph.edges if not quarantined(e)], records, labels)</pre></details>
+<div class="callout"><b>Watch out.</b> The rule also withholds legitimate edges that happen to be unverified. Read the collateral line on every build; confirming those edges against a system of record removes the cost. The same rule protects against honest extraction errors, which are far more common than attacks.</div>
+</div></section>
+
+<section id="r18"><div class="num">18<small>challenges</small></div><div class="in">
+<div class="meta"><span class="prio high">high priority</span><span class="srcline">§X memory coordination in multi-agent systems</span></div>
+<h2>Multi-agent write conflicts</h2>
+<p class="why">The VRM and the banker write to the same customer's memory. If "the later write wins", the result depends on queue timing, not on what happened.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>On the same day the banker records "email only" from a call and the VRM records "phone after 4pm" from a chat. Under the vault's supersession rule the later <i>write</i> wins. With queue-based ingestion (SQS), which worker runs first is effectively random, so the customer's current preference is nondeterministic.</p>
+<h5>Example: same two statements, both orders</h5>
+<div class="ex bad">desk then vrm  → current: <span class="hl">phone after 4pm</span>
+vrm then desk  → current: <span class="hl">email only</span>
+same facts, different memory</div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Order by <b>event time</b>, not write time, using a fine-grained clock (timestamps, not dates). When two statements have the same event time and come from different channels, <b>keep both</b>, mark them as a conflict, and <b>ask the customer</b>. For a preference the customer is the authority, so an "agent ranking" isn't a safe tie-break.</p>
+<h5>Example: the tie-break rule</h5>
+<div class="ex good">different event dates            → later event wins (supersede)
+same day, same channel           → later write wins
+same day, <span class="ok">different channels</span>     → <span class="ok">keep both, mark conflict,
+                                    ask the customer</span></div>
+</div>
+</div>
+<details class="how"><summary>How it is done</summary>
+<pre class="code">def resolve_same_day(a: dict, b: dict) -> str:
+    if a["observed_on"] != b["observed_on"]:
+        return "later event date wins (supersede)"
+    return ("same day, different channels: keep both, mark as conflict, ask the customer"
+            if a["channel"] != b["channel"] else "same channel: later write wins")</pre></details>
+<div class="callout"><b>Watch out.</b> If the two write orders give different current values, the store is order-dependent; test for it explicitly. "The banker outranks the VRM" is a policy decision, not a technical default.</div>
+</div></section>
+
+<section id="r19"><div class="num">19<small>evaluation</small></div><div class="in">
+<div class="meta"><span class="prio low">lower priority</span><span class="srcline">§VIII-B and Table I · LoCoMo [94] · LongMemEval [95] · HaluMem [128] · MemoryBench [129]</span></div>
+<h2>Which benchmarks test what</h2>
+<p class="why">Public benchmark scores are useful for regression and comparison, but on their own they say little about a regulated setting.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>A good LoCoMo or LongMemEval score is easy to quote. But interaction benchmarks rarely supervise conflicting updates, and personalisation benchmarks assume it is clear what should be stored. None of them tests access boundaries, conflicts with a system of record, or commitments with due dates.</p>
+<h5>Example: what public benchmarks miss</h5>
+<div class="ex bad">conflicting facts with gold handling (CRM vs customer)
+access boundaries graded as their own category
+commitments with due dates and states
+lineage-based retrieval metrics
+<span class="hl">none of these is in the public sets</span></div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p>Map the survey's benchmark scenarios to the use case. Add public benchmarks for what the bank's own dataset lacks (scale, drift over months, continual learning), and keep the bank's own dataset as the <b>release criterion</b>.</p>
+<h5>Example: the biggest gap</h5>
+<div class="ex good">Continual  (MemoryBench, StreamBench, Evo-Memory)
+  quality as memory grows and learns
+  <span class="hl">not covered</span> by this series' dataset → add one</div>
+</div>
+</div>
+<table><thead><tr><th>Scenario</th><th>Examples</th><th>Tests, for this use case</th><th>Own dataset covers it?</th></tr></thead><tbody>
+<tr><td>Interaction</td><td class="mono">LoCoMo, LongMemEval, MSC</td><td>Recall across sessions and channels</td><td><span class="pill pass">YES</span> in miniature</td></tr>
+<tr><td>Personalization</td><td class="mono">PersonaMem, PrefEval</td><td>Changing preferences, persona drift</td><td><span class="pill na">PART</span> updates yes, drift no</td></tr>
+<tr><td>LongContext</td><td class="mono">HotpotQA, MuSiQue, HaluMem</td><td>Multi-hop relations, invented memories</td><td><span class="pill pass">YES</span> graph Qs, grounding</td></tr>
+<tr class="fail"><td>Continual</td><td class="mono">MemoryBench, StreamBench</td><td>Quality as memory grows</td><td><span class="pill fail">NO</span> the main gap</td></tr>
+<tr><td>Tool/Gen</td><td class="mono">ToolBench, GAIA</td><td>Memory around system lookups</td><td><span class="pill na">PART</span> recipe 9</td></tr>
+<tr><td>Web, Environments</td><td class="mono">WebArena, ALFWorld</td><td>Not central to a banking vault</td><td><span class="pill na">N/A</span></td></tr>
+</tbody></table>
+</div></section>
+
+<section id="r20"><div class="num">20<small>evaluation</small></div><div class="in">
+<div class="meta"><span class="prio high">high priority</span><span class="srcline">§VIII evaluation synthesis</span></div>
+<h2>Is the result stable?</h2>
+<p class="why">Across this series' complete runs, vault accuracy moved between about 65% and 88% with no code change. A gate decided on one run is decided by noise.</p>
+<div class="ir">
+<div class="card issue"><h4>The issue</h4>
+<p>Answering and judging are both model calls, so the same question on the same memory can pass in one run and fail in the next. Every "recipe X improved Y" claim (recipe 8's 1 of 4 → 3 of 4, for instance) is a single draw unless it is repeated.</p>
+<h5>Example: one run, taken at face value</h5>
+<div class="ex bad">run 1:  v8 ok · v20 WRONG     → "v8 is fixed"
+run 2:  v8 WRONG · v20 ok     → "v20 is fixed"
+<span class="hl">both conclusions are noise</span></div>
+</div>
+<div class="card remedy"><h4>Suggested remedy</h4>
+<p><b>Freeze</b> the vault (no re-extraction) and answer the same questions <b>several times</b>. Grade each answer and report <b>per-question stability</b>, plus the <b>mean with its range</b>. Gate on stable questions, or on the mean across runs. Separate extraction variance (a rebuild) from answering and judging variance (a frozen vault).</p>
+<h5>Example: three runs on a frozen vault</h5>
+<div class="ex good"><table><thead><tr><th></th><th>run 1</th><th>run 2</th><th>run 3</th><th>stable</th></tr></thead><tbody>
+<tr><td>v4</td><td>✗</td><td>✗</td><td>✗</td><td>yes</td></tr>
+<tr><td><span class="hl">v8</span></td><td>✓</td><td>✗</td><td>✗</td><td><span class="hl">no</span></td></tr>
+<tr><td>v13</td><td>✗</td><td>✗</td><td>✗</td><td>yes</td></tr>
+<tr><td>v17–v19</td><td>✓</td><td>✓</td><td>✓</td><td>yes</td></tr>
+<tr><td><span class="hl">v20</span></td><td>✗</td><td>✓</td><td>✗</td><td><span class="hl">no</span></td></tr>
+</tbody></table></div>
+</div>
+</div>
+<div class="result"><h4>Measured</h4>
+<div class="stat-row"><div class="stat"><b>57%</b><span>run 1</span></div><div class="stat"><b>57%</b><span>run 2</span></div><div class="stat accent"><b>43%</b><span>run 3</span></div><div class="stat gold"><b>52%</b><span>mean · range 43–57%</span></div></div>
+<p class="muted">Two of seven questions flipped (v8, v20). Because the vault was frozen, every flip is answering-and-judging variance; a full rebuild adds extraction variance on top.</p></div>
+<div class="callout"><b>Watch out.</b> Three runs is the minimum for seeing variance, not for estimating it well. For a release decision, use more runs or more questions per category.</div>
+</div></section>
+
+<section id="summary"><div class="num">∑<small>at a glance</small></div><div class="in">
+<h2>All twenty, on one page</h2>
+<table class="summary"><thead><tr><th>#</th><th>Issue</th><th>Remedy</th><th>Evidence from the run</th></tr></thead><tbody>
+<tr><td>01</td><td>One relation, many invented names</td><td>Controlled vocabulary + OTHER + gap review</td><td>38 → 8 predicates</td></tr>
+<tr><td>02</td><td>Said-on date used as happened-on date</td><td>Both dates, rule grounding, arithmetic in code</td><td>0/4 → 4/4 temporal Qs</td></tr>
+<tr><td>03</td><td>Can't say what the bank knew then</td><td>Valid time + transaction time, invalidate</td><td>5 Sep as known 5 Sep: Arjun, Priya</td></tr>
+<tr><td>04</td><td>Flat history won't fit or tell a story</td><td>Topic tree, root summary, drill-down, coverage check</td><td>3.2× smaller; coverage 43/45</td></tr>
+<tr><td>05</td><td>Promise split into pairs, roles lost</td><td>Role-labelled hyperedge with sources</td><td>Deepak lookup 0 → 2 promises</td></tr>
+<tr><td>06</td><td>Graph tokens spent on every question</td><td>Route to the graph for relationship Qs only</td><td>0.95 sufficiency at 525 vs 688 tokens</td></tr>
+<tr><td>07</td><td>Time constraints in the question ignored</td><td>Parse as-of / window / recency deterministically</td><td>v1–v3 gold; July → 13 July events</td></tr>
+<tr><td>08</td><td>Multi-part questions half answered</td><td>Plan → retrieve → sufficiency → retrieve again</td><td>1/4 → 3/4 (one regression)</td></tr>
+<tr><td>09</td><td>System vs customer conflict hidden</td><td>Conflict note delivered as data with the system answer</td><td>fleet check FAIL → PASS</td></tr>
+<tr><td>10</td><td>Duplicates repeat; similar ≠ same</td><td>Embed → propose → model gate → mark, don't delete</td><td>0 merges of 8 proposals</td></tr>
+<tr><td>11</td><td>All records weigh the same</td><td>PageRank × decay, protected classes, review only</td><td>ordered review list</td></tr>
+<tr><td>12</td><td>Implied links shown as fact</td><td>Explicit rules, premises, confidence, audience</td><td>4 inferred; banker yes, VRM no</td></tr>
+<tr><td>13</td><td>Outcomes never become guidance</td><td>Proposed skills/lessons + human approval</td><td>4 proposals, 0 invented ids</td></tr>
+<tr><td>14</td><td>Gaps known, never asked</td><td>Deterministic gaps, one question, repeat-ask check</td><td>asks staff_count</td></tr>
+<tr><td>15</td><td>Graph errors invisible in answers</td><td>Structural / semantic / temporal / operational metrics</td><td>17/18 edges supported</td></tr>
+<tr><td>16</td><td>Structure names other customers</td><td>Exposure measure + per-channel predicate allowlist</td><td>VRM exposure 1 → 0</td></tr>
+<tr><td>17</td><td>A claim rewires the graph</td><td>Quarantine unverified governed / cross-customer edges</td><td>claim edge removed, 2 in review</td></tr>
+<tr><td>18</td><td>Write order decides the truth</td><td>Event time; same-day cross-channel → keep both, ask</td><td>two orders, two answers → rule</td></tr>
+<tr><td>19</td><td>Benchmarks miss regulated aspects</td><td>Scenario map; own dataset is the release criterion</td><td>Continual is the gap</td></tr>
+<tr><td>20</td><td>One run is noise</td><td>Frozen vault, repeated runs, mean and range</td><td>43–57%; 2 of 7 flipped</td></tr>
+</tbody></table>
+</div></section>
+
+</main>
+
+<footer class="wrap">
+<p><b>Sources.</b></p>
+<ul>
+<li>Yang et al., "Graph-based Agent Memory: Taxonomy, Techniques, and Applications", arXiv 2602.05665 (2026). Reference numbers in brackets are the survey's own; contributions are as the survey describes them, and the primary papers were not all read in full.</li>
+<li>Rasmussen et al., "Zep: a temporal knowledge graph architecture for agent memory", arXiv 2501.13956 (2025). Ge et al., "TReMu", Findings of ACL 2025. Tan et al., "MemoTime", arXiv 2510.13614 (2025). Luo et al., "HyperGraphRAG", arXiv 2503.21322 (2025).</li>
+<li>Everything marked as "this project" in the notebook (governed vocabularies, quarantine rules, allowlists, approval steps, tie-break rules, stability runs) is not from a paper.</li>
+</ul>
+<p>Generated from mem0-strands-notebooks/05_graph_memory_cookbook.ipynb (saved outputs) and memlab/techniques.py. Models: us.anthropic.claude-haiku-4-5-20251001-v1:0 for agents and extraction; amazon.titan-embed-text-v2:0 for embeddings. The customers, businesses and identifiers are fictional.</p>
+</footer>
+<script>
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('show');io.unobserve(e.target)}}),{threshold:.08});
+document.querySelectorAll('.in').forEach(el=>io.observe(el));
+const stops=[document.querySelector('header.hero'),...document.querySelectorAll('main > section, main > .part')];
+const bar=document.getElementById('progress');
+addEventListener('scroll',()=>{const h=document.documentElement;bar.style.width=(100*h.scrollTop/(h.scrollHeight-h.clientHeight))+'%'},{passive:true});
+function current(){let i=0;stops.forEach((s,k)=>{if(s.getBoundingClientRect().top<=8)i=k});return i}
+addEventListener('keydown',e=>{
+  if(e.target.closest('input,textarea')||e.metaKey||e.ctrlKey||e.altKey)return;
+  const next=['ArrowRight','PageDown','j'].includes(e.key),prev=['ArrowLeft','PageUp','k'].includes(e.key);
+  if(!next&&!prev)return;
+  e.preventDefault();
+  const i=Math.max(0,Math.min(stops.length-1,current()+(next?1:-1)));
+  stops[i].scrollIntoView({behavior:'smooth',block:'start'});
+});
+</script>
+</body></html>
